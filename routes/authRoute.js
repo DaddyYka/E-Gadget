@@ -1,4 +1,5 @@
 import express, { Router } from "express";
+import passport from "passport";
 import {
   registerController,
   loginController,
@@ -7,10 +8,11 @@ import {
   updateProfileController,
   getOrdersController,
   getAllOrdersController,
-  orderStatusController
+  orderStatusController,
+  mobileVerification,
+  OTPverification
 } from "../controllers/authController.js";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
-
 
 //router object
 const router = express.Router();
@@ -18,6 +20,11 @@ const router = express.Router();
 //routing
 //REGISTER || POST
 router.post("/register", registerController);
+
+//mobile verification ||POST
+router.post("/mobile", mobileVerification);
+router.post("/otp", OTPverification);
+
 
 //LOGIN || POST
 router.post("/login", loginController);
@@ -49,5 +56,11 @@ router.get("/all-orders", requireSignIn, isAdmin, getAllOrdersController);
 
 //order status complete
 router.put("/order-status/:orderId", requireSignIn, isAdmin, orderStatusController);
+
+router.get('/logout', (req, res) => {
+  req.logout();
+  res.redirect('/');
+});
+
 
 export default router; 

@@ -2,7 +2,9 @@ import userModel from "../models/userModel.js";
 import orderModel from "../models/orderModel.js";
 import { comparePassword, hashPassword } from "./../helpers/authHelper.js";
 import JWT from "jsonwebtoken";
+import twilio from 'twilio';
 
+//Registration
 export const registerController = async (req, res) => {
   try {
     const { name, email, password, phone, address, answer } = req.body;
@@ -17,7 +19,7 @@ export const registerController = async (req, res) => {
       return res.send({ message: "Password is Required" });
     }
     if (!phone) {
-      return res.send({ message: "Contact no is Required" });
+      return res.send({ message: "Phone number is Required" });
     }
     if (!address) {
       return res.send({ message: "Address is Required" });
@@ -27,6 +29,7 @@ export const registerController = async (req, res) => {
     }
     //check user
     const exisitingUser = await userModel.findOne({ email });
+
     //exisiting user
     if (exisitingUser) {
       return res.status(200).send({
@@ -48,7 +51,7 @@ export const registerController = async (req, res) => {
 
     res.status(201).send({
       success: true,
-      message: "User Registered Successfully",
+      message: "Complete mobile verification",
       user,
     });
   } catch (error) {
@@ -56,6 +59,62 @@ export const registerController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Error in Registration",
+      error,
+    });
+  }
+};
+
+//Mobile verification.
+export const mobileVerification = async (req, res) => {
+  try {
+    const client = await new twilio(process.env.accountSID, process.env.authToken);
+    console.log("number", req.body.phone);
+  client.verify.v2
+    .services(process.env.serviceSID)
+    .verifications.create({ to: `+91${req.body.phone}`, channel: "sms" })
+    .then((verification) => console.log("status", verification.status));
+    res.status(200).send({
+      success: true,
+      message: "OTP sent successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Mobile not verified",
+      error,
+    });
+  }
+  
+};
+
+//Otp verification
+export const OTPverification = async (req, res) => {
+  try {
+    const client = await new twilio(process.env.accountSID, process.env.authToken);
+
+    const { phone, verificationCode } = req.body;
+    console.log("otp & Mobile number", phone, verificationCode);
+
+    client.verify.v2
+      .services(process.env.serviceSID)
+      .verificationChecks.create({
+        to: `+91${phone}`,
+        code: verificationCode,
+      })
+      .then((verification_check) =>
+        console.log("verification status", verification_check.status)
+      );
+    res.status(200).send({
+      success: true,
+      message: "Mobile verification Successful",
+    });
+    // res.redirect('/login');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "OTP not verified",
       error,
     });
   }
@@ -255,6 +314,5 @@ export const orderStatusController = async (req, res) => {
     });
   }
 };
-
 
 
